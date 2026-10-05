@@ -1,0 +1,163 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<!--
+Ejemplo de datos de entrada para transformación XSLT en dominio bancario.
+Contiene transacciones, cuentas y clientes con casos reales:
+- Transacciones múltiples por cuenta
+- Clientes con diferentes tipos de identificación
+- Cuentas en distintas monedas
+- Fechas en formato ISO 8601
+- Montos con decimales y signo
+-->
+<transacciones xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="../src/schemas/datos-origen.xsd">
+    <cliente id="CLI1001">
+        <tipoIdentificacion>CC</tipoIdentificacion>
+        <numeroIdentificacion>123456789</numeroIdentificacion>
+        <nombre>Juan Pérez</nombre>
+        <tipoCliente>PERSONA_NATURAL</tipoCliente>
+        <segmento>PREMIUM</segmento>
+        <fechaAlta>2020-01-15</fechaAlta>
+    </cliente>
+    <cliente id="CLI1002">
+        <tipoIdentificacion>NIT</tipoIdentificacion>
+        <numeroIdentificacion>987654321</numeroIdentificacion>
+        <nombre>Empresa XYZ S.A.</nombre>
+        <tipoCliente>PERSONA_JURIDICA</tipoCliente>
+        <segmento>CORPORATIVO</segmento>
+        <fechaAlta>2018-11-20</fechaAlta>
+    </cliente>
+    
+    <cuenta id="CTA2001" clienteId="CLI1001" moneda="COP">
+        <numeroCuenta>464000123456</numeroCuenta>
+        <tipoCuenta>AHORROS</tipoCuenta>
+        <saldo>15200000.50</saldo>
+        <fechaApertura>2020-01-15</fechaApertura>
+        <estado>ACTIVA</estado>
+    </cuenta>
+    <cuenta id="CTA2002" clienteId="CLI1001" moneda="USD">
+        <numeroCuenta>464000789012</numeroCuenta>
+        <tipoCuenta>CORRIENTE</tipoCuenta>
+        <saldo>8500.75</saldo>
+        <fechaApertura>2021-03-10</fechaApertura>
+        <estado>ACTIVA</estado>
+    </cuenta>
+    <cuenta id="CTA2003" clienteId="CLI1002" moneda="COP">
+        <numeroCuenta>464000345678</numeroCuenta>
+        <tipoCuenta>CORRIENTE</tipoCuenta>
+        <saldo>45000000.00</saldo>
+        <fechaApertura>2018-11-20</fechaApertura>
+        <estado>ACTIVA</estado>
+    </cuenta>
+    
+    <transaccion id="TRX3001" cuentaId="CTA2001">
+        <tipo>DEPOSITO</tipo>
+        <monto>500000.00</monto>
+        <fecha>2023-05-15T09:30:00</fecha>
+        <descripcion>Depósito en efectivo</descripcion>
+        <sucursal>Bogotá Centro</sucursal>
+        <cajero>CAJ123</cajero>
+    </transaccion>
+    <transaccion id="TRX3002" cuentaId="CTA2001">
+        <tipo>RETIRO</tipo>
+        <monto>-200000.00</monto>
+        <fecha>2023-05-16T14:15:00</fecha>
+        <descripcion>Retiro cajero automático</descripcion>
+        <sucursal>Bogotá Norte</sucursal>
+        <cajero>ATM456</cajero>
+    </transaccion>
+    <transaccion id="TRX3003" cuentaId="CTA2002">
+        <tipo>TRANSFERENCIA</tipo>
+        <monto>-1500.25</monto>
+        <fecha>2023-05-17T10:45:00</fecha>
+        <descripcion>Transferencia a cuenta externa</descripcion>
+        <referencia>PAGO FACTURA SERVICIOS</referencia>
+        <destino>
+            <banco>BANCO_INTERNACIONAL</banco>
+            <numeroCuenta>9876543210</numeroCuenta>
+        </destino>
+    </transaccion>
+    <transaccion id="TRX3004" cuentaId="CTA2003">
+        <tipo>DEPOSITO</tipo>
+        <monto>12000000.00</monto>
+        <fecha>2023-05-18T11:30:00</fecha>
+        <descripcion>Depósito por nómina</descripcion>
+        <sucursal>Medellín Centro</sucursal>
+        <cajero>CAJ789</cajero>
+    </transaccion>
+    <transaccion id="TRX3005" cuentaId="CTA2001">
+        <tipo>INTERESES</tipo>
+        <monto>12500.50</monto>
+        <fecha>2023-05-31T23:59:59</fecha>
+        <descripcion>Intereses mes de mayo</descripcion>
+        <detalle>
+            <tasa>0.8%</tasa>
+            <periodo>30</periodo>
+        </detalle>
+    </transaccion>
+    <transaccion id="TRX3006" cuentaId="CTA2003">
+        <tipo>COMISION</tipo>
+        <monto>-15000.00</monto>
+        <fecha>2023-05-31T23:59:59</fecha>
+        <descripcion>Comisión manejo de cuenta</descripcion>
+        <detalle>
+            <concepto>MANTENIMIENTO MENSUAL</concepto>
+            <periodo>MAYO 2023</periodo>
+        </detalle>
+    </transaccion>
+    <transaccion id="TRX3007" cuentaId="CTA2002">
+        <tipo>CONVERSION</tipo>
+        <monto>-500.00</monto>
+        <fecha>2023-05-20T15:20:00</fecha>
+        <descripcion>Conversión de divisas</descripcion>
+        <detalle>
+            <monedaOrigen>USD</monedaOrigen>
+            <monedaDestino>COP</monedaDestino>
+            <tasa>4050.00</tasa>
+            <montoConvertido>2025000.00</montoConvertido>
+        </detalle>
+    </transaccion>
+    
+    <!-- Casos especiales para probar transformaciones avanzadas -->
+    <transaccion id="TRX3008" cuentaId="CTA2001">
+        <tipo>RETIRO</tipo>
+        <monto>-1000000.00</monto>
+        <fecha>2023-05-19T16:30:00</fecha>
+        <descripcion>Retiro grande</descripcion>
+        <sucursal>Bogotá Centro</sucursal>
+        <cajero>CAJ123</cajero>
+        <estado>
+            <codigo>PENDIENTE_AUTORIZACION</codigo>
+            <fechaLimite>2023-05-20T12:00:00</fechaLimite>
+        </estado>
+    </transaccion>
+    
+    <cuenta id="CTA2004" clienteId="CLI1001" moneda="EUR">
+        <numeroCuenta>464000567890</numeroCuenta>
+        <tipoCuenta>AHORROS</tipoCuenta>
+        <saldo>0.00</saldo>
+        <fechaApertura>2023-01-05</fechaApertura>
+        <estado>INACTIVA</estado>
+    </cuenta>
+    
+    <cliente id="CLI1003">
+        <tipoIdentificacion>CE</tipoIdentificacion>
+        <numeroIdentificacion>X1234567</numeroIdentificacion>
+        <nombre>Maria García López</nombre>
+        <tipoCliente>PERSONA_NATURAL</tipoCliente>
+        <segmento>BASICO</segmento>
+        <fechaAlta>2022-07-10</fechaAlta>
+        <fechaBaja>2023-04-15</fechaBaja>
+    </cliente>
+    
+    <!-- Transacción con monto cero para probar manejo de casos frontera -->
+    <transaccion id="TRX3009" cuentaId="CTA2001">
+        <tipo>AJUSTE</tipo>
+        <monto>0.00</monto>
+        <fecha>2023-05-25T08:00:00</fecha>
+        <descripcion>Ajuste por diferencia mínima</descripcion>
+        <detalle>
+            <concepto>CORRECCION</concepto>
+            <observacion>Diferencia mínima entre sistemas</observacion>
+        </detalle>
+    </transaccion>
+</transacciones>

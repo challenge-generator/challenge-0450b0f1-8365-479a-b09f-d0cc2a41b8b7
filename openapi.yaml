@@ -1,0 +1,297 @@
+openapi: 3.1.0
+info:
+  title: API de Transformación Bancaria
+  description: |-
+    Contrato para la integración de sistemas bancarios mediante transformación XSLT.
+    Este documento define los endpoints, esquemas y ejemplos para la transformación
+    de datos entre formatos XML de origen y destino en el contexto de SOA.
+  version: 1.0.0
+  contact:
+    name: Equipo de Integración
+    email: integracion@banco.com
+servers:
+  - url: https://api.banco.com/v1
+    description: Servidor de producción
+paths:
+  /transformar:
+    post:
+      summary: Transformar datos bancarios entre esquemas
+      description: |-
+        Recibe un documento XML conforme al esquema de origen y lo transforma
+        al esquema de destino utilizando XSLT 3.0 con extensiones personalizadas.
+      operationId: transformarDatos
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/DatosOrigen'
+            examples:
+              ejemploEntrada:
+                $ref: '#/components/examples/DatosEntradaEjemplo'
+      responses:
+        '200':
+          description: Documento transformado exitosamente
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/DatosDestino'
+              examples:
+                ejemploSalida:
+                  $ref: '#/components/examples/DatosSalidaEjemplo'
+        '400':
+          description: Error en la validación del XML de entrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorValidacion'
+              examples:
+                errorValidacion:
+                  value:
+                    codigo: "VALIDACION_XML"
+                    mensaje: "El documento XML no cumple con el esquema de origen"
+                    detalles:
+                      - campo: "cuenta/numero"
+                        error: "Debe seguir el patrón [A-Z]{2}\d{10}"
+        '408':
+          description: Tiempo de espera excedido durante la transformación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorTiempoEspera'
+        '500':
+          description: Error interno en el proceso de transformación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorTransformacion'
+              examples:
+                errorTransformacion:
+                  value:
+                    codigo: "ERROR_TRANSFORMACION"
+                    mensaje: "Fallo en la transformación XSLT"
+                    traza: "Error en plantilla 'calcular-saldo' línea 45"
+components:
+  schemas:
+    DatosOrigen:
+      type: object
+      xml:
+        name: datosOrigen
+        namespace: "http://banco.com/schemas/datos-origen"
+      description: Esquema XML de origen para transacciones bancarias
+      properties:
+        cuentas:
+          type: array
+          items:
+            $ref: '#/components/schemas/CuentaOrigen'
+          xml:
+            wrapped: true
+            name: cuentas
+    CuentaOrigen:
+      type: object
+      required: [numero, tipo, transacciones]
+      properties:
+        numero:
+          type: string
+          pattern: "^[A-Z]{2}\d{10}$"
+          example: "ES91234567890123456789"
+          description: Número de cuenta en formato IBAN
+        tipo:
+          type: string
+          enum: ["AHORRO", "CORRIENTE", "INVERSION"]
+          description: Tipo de cuenta bancaria
+        transacciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransaccionOrigen'
+          xml:
+            wrapped: true
+            name: transacciones
+      xml:
+        name: cuenta
+    TransaccionOrigen:
+      type: object
+      required: [id, fecha, monto, tipo]
+      properties:
+        id:
+          type: string
+          pattern: "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+          description: Identificador único de transacción (UUID)
+        fecha:
+          type: string
+          format: date-time
+          description: Fecha y hora de la transacción en UTC
+        monto:
+          type: number
+          format: double
+          minimum: 0.01
+          description: Monto de la transacción en euros
+        tipo:
+          type: string
+          enum: ["DEPOSITO", "RETIRO", "TRANSFERENCIA", "COMISION"]
+        concepto:
+          type: string
+          maxLength: 200
+          description: Descripción opcional de la transacción
+      xml:
+        name: transaccion
+    DatosDestino:
+      type: object
+      xml:
+        name: datosDestino
+        namespace: "http://banco.com/schemas/datos-destino"
+      description: Esquema XML de destino para reportes consolidados
+      properties:
+        reporte:
+          type: object
+          properties:
+            fechaGeneracion:
+              type: string
+              format: date-time
+              description: Fecha de generación del reporte
+            cuentas:
+              type: array
+              items:
+                $ref: '#/components/schemas/CuentaDestino'
+              xml:
+                wrapped: true
+                name: cuentas
+          required: [fechaGeneracion, cuentas]
+    CuentaDestino:
+      type: object
+      required: [identificador, tipo, saldo, transacciones]
+      properties:
+        identificador:
+          type: string
+          pattern: "^[A-Z]{2}\d{10}$"
+          description: Identificador único de la cuenta
+        tipo:
+          type: string
+          enum: ["AHORRO", "CORRIENTE", "INVERSION"]
+        saldo:
+          type: number
+          format: double
+          description: Saldo consolidado de la cuenta
+        transacciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransaccionDestino'
+          xml:
+            wrapped: true
+            name: transacciones
+        intereses:
+          type: number
+          format: double
+          description: Intereses acumulados en el período
+      xml:
+        name: cuenta
+    TransaccionDestino:
+      type: object
+      required: [referencia, fecha, monto, tipo]
+      properties:
+        referencia:
+          type: string
+          pattern: "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+        fecha:
+          type: string
+          format: date
+          description: Fecha de la transacción en formato YYYY-MM-DD
+        monto:
+          type: number
+          format: double
+          description: Monto de la transacción
+        tipo:
+          type: string
+          enum: ["DEPOSITO", "RETIRO", "TRANSFERENCIA", "COMISION"]
+        categoria:
+          type: string
+          enum: ["INGRESO", "GASTO", "TRANSFERENCIA_INTERNA", "COMISION"]
+          description: Clasificación de la transacción para reportes
+      xml:
+        name: transaccion
+    ErrorValidacion:
+      type: object
+      required: [codigo, mensaje]
+      properties:
+        codigo:
+          type: string
+          enum: ["VALIDACION_XML", "ESQUEMA_INVALIDO", "DATOS_INCOMPLETOS"]
+        mensaje:
+          type: string
+        detalles:
+          type: array
+          items:
+            type: object
+            properties:
+              campo:
+                type: string
+              error:
+                type: string
+    ErrorTiempoEspera:
+      type: object
+      required: [codigo, mensaje]
+      properties:
+        codigo:
+          type: string
+          enum: ["TIMEOUT"]
+        mensaje:
+          type: string
+          example: "Tiempo de espera excedido durante la transformación"
+    ErrorTransformacion:
+      type: object
+      required: [codigo, mensaje]
+      properties:
+        codigo:
+          type: string
+          enum: ["ERROR_TRANSFORMACION", "FUNCION_PERSONALIZADA"]
+        mensaje:
+          type: string
+        traza:
+          type: string
+          description: Detalle técnico del error
+  examples:
+    DatosEntradaEjemplo:
+      value: |
+        <?xml version="1.1" encoding="UTF-8"?>
+        <datosOrigen xmlns="http://banco.com/schemas/datos-origen">
+          <cuentas>
+            <cuenta>
+              <numero>ES91234567890123456789</numero>
+              <tipo>AHORRO</tipo>
+              <transacciones>
+                <transaccion>
+                  <id>a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8</id>
+                  <fecha>2023-10-15T14:30:00Z</fecha>
+                  <monto>1500.50</monto>
+                  <tipo>DEPOSITO</tipo>
+                  <concepto>Transferencia recibida</concepto>
+                </transaccion>
+              </transacciones>
+            </cuenta>
+          </cuentas>
+        </datosOrigen>
+    DatosSalidaEjemplo:
+      value: |
+        <?xml version="1.1" encoding="UTF-8"?>
+        <datosDestino xmlns="http://banco.com/schemas/datos-destino">
+          <reporte>
+            <fechaGeneracion>2023-10-15T15:00:00Z</fechaGeneracion>
+            <cuentas>
+              <cuenta>
+                <identificador>ES91234567890123456789</identificador>
+                <tipo>AHORRO</tipo>
+                <saldo>1500.50</saldo>
+                <transacciones>
+                  <transaccion>
+                    <referencia>a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8</referencia>
+                    <fecha>2023-10-15</fecha>
+                    <monto>1500.50</monto>
+                    <tipo>DEPOSITO</tipo>
+                    <categoria>INGRESO</categoria>
+                  </transaccion>
+                </transacciones>
+                <intereses>12.34</intereses>
+              </cuenta>
+            </cuentas>
+          </reporte>
+        </datosDestino>

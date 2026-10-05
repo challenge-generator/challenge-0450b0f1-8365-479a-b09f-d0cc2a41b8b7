@@ -1,0 +1,321 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<!--
+Ejemplo de salida esperada después de aplicar la transformación XSLT.
+Estructura validada contra ../src/schemas/datos-destino.xsd
+
+Transformaciones aplicadas:
+1. Agrupación por cliente y cuenta
+2. Cálculo de saldos acumulados
+3. Conversión de monedas a COP usando tasa de cambio
+4. Clasificación de transacciones por tipo y monto
+5. Formateo de fechas en formato local
+6. Inclusión de metadatos de transformación
+-->
+<reporteTransaccional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                      xsi:noNamespaceSchemaLocation="../src/schemas/datos-destino.xsd"
+                      fechaGeneracion="2023-06-01T00:00:00"
+                      periodo="2023-05">
+    <metadatos>
+        <fuente>Sistema Bancario Central</fuente>
+        <versionEsquema>1.1</versionEsquema>
+        <totalClientes>3</totalClientes>
+        <totalCuentas>4</totalCuentas>
+        <totalTransacciones>9</totalTransacciones>
+        <monedaBase>COP</monedaBase>
+        <tasaCambio>
+            <monedaOrigen>USD</monedaOrigen>
+            <valor>4050.00</valor>
+            <fecha>2023-05-31</fecha>
+        </tasaCambio>
+        <tasaCambio>
+            <monedaOrigen>EUR</monedaOrigen>
+            <valor>4500.00</valor>
+            <fecha>2023-05-31</fecha>
+        </tasaCambio>
+    </metadatos>
+    
+    <cliente id="CLI1001">
+        <identificacion>
+            <tipo>CC</tipo>
+            <numero>123456789</numero>
+        </identificacion>
+        <nombreCompleto>Juan Pérez</nombreCompleto>
+        <tipo>PERSONA_NATURAL</tipo>
+        <segmento>PREMIUM</segmento>
+        <fechaVinculacion>2020-01-15</fechaVinculacion>
+        <estado>ACTIVO</estado>
+        
+        <cuentas>
+            <cuenta id="CTA2001" moneda="COP">
+                <numero>464000123456</numero>
+                <tipo>AHORROS</tipo>
+                <saldoInicial>15200000.50</saldoInicial>
+                <saldoFinal>14527501.00</saldoFinal>
+                <estado>ACTIVA</estado>
+                
+                <transacciones>
+                    <transaccion id="TRX3001" tipo="DEPOSITO">
+                        <fecha>15/05/2023 09:30:00</fecha>
+                        <monto>500000.00</monto>
+                        <descripcion>Depósito en efectivo</descripcion>
+                        <sucursal>Bogotá Centro</sucursal>
+                        <clasificacion>
+                            <categoria>INGRESOS</categoria>
+                            <rango>MEDIO</rango>
+                        </clasificacion>
+                    </transaccion>
+                    <transaccion id="TRX3002" tipo="RETIRO">
+                        <fecha>16/05/2023 14:15:00</fecha>
+                        <monto>200000.00</monto>
+                        <descripcion>Retiro cajero automático</descripcion>
+                        <clasificacion>
+                            <categoria>EGRESOS</categoria>
+                            <rango>BAJO</rango>
+                        </clasificacion>
+                    </transaccion>
+                    <transaccion id="TRX3005" tipo="INTERESES">
+                        <fecha>31/05/2023 23:59:59</fecha>
+                        <monto>12500.50</monto>
+                        <descripcion>Intereses mes de mayo</descripcion>
+                        <detalle>
+                            <tasa>0.8%</tasa>
+                            <periodo>30</periodo>
+                        </detalle>
+                        <clasificacion>
+                            <categoria>INGRESOS</categoria>
+                            <rango>BAJO</rango>
+                        </clasificacion>
+                    </transaccion>
+                    <transaccion id="TRX3008" tipo="RETIRO">
+                        <fecha>19/05/2023 16:30:00</fecha>
+                        <monto>1000000.00</monto>
+                        <descripcion>Retiro grande</descripcion>
+                        <estado>
+                            <codigo>PENDIENTE_AUTORIZACION</codigo>
+                            <fechaLimite>20/05/2023 12:00:00</fechaLimite>
+                        </estado>
+                        <clasificacion>
+                            <categoria>EGRESOS</categoria>
+                            <rango>ALTO</rango>
+                        </clasificacion>
+                    </transaccion>
+                    <transaccion id="TRX3009" tipo="AJUSTE">
+                        <fecha>25/05/2023 08:00:00</fecha>
+                        <monto>0.00</monto>
+                        <descripcion>Ajuste por diferencia mínima</descripcion>
+                        <clasificacion>
+                            <categoria>NEUTRO</categoria>
+                            <rango>MINIMO</rango>
+                        </clasificacion>
+                    </transaccion>
+                </transacciones>
+                
+                <resumen>
+                    <totalIngresos>512500.50</totalIngresos>
+                    <totalEgresos>1200000.00</totalEgresos>
+                    <transacciones>
+                        <porTipo>
+                            <tipo nombre="DEPOSITO" cantidad="1" monto="500000.00"/>
+                            <tipo nombre="RETIRO" cantidad="2" monto="1200000.00"/>
+                            <tipo nombre="INTERESES" cantidad="1" monto="12500.50"/>
+                            <tipo nombre="AJUSTE" cantidad="1" monto="0.00"/>
+                        </porTipo>
+                        <porRango>
+                            <rango nombre="ALTO" cantidad="1" monto="1000000.00"/>
+                            <rango nombre="MEDIO" cantidad="1" monto="500000.00"/>
+                            <rango nombre="BAJO" cantidad="2" monto="212500.50"/>
+                            <rango nombre="MINIMO" cantidad="1" monto="0.00"/>
+                        </porRango>
+                    </transacciones>
+                </resumen>
+            </cuenta>
+            
+            <cuenta id="CTA2002" moneda="COP">
+                <numero>464000789012</numero>
+                <tipo>CORRIENTE</tipo>
+                <saldoInicial>34425000.00</saldoInicial>
+                <saldoFinal>32400000.00</saldoFinal>
+                <estado>ACTIVA</estado>
+                
+                <transacciones>
+                    <transaccion id="TRX3003" tipo="TRANSFERENCIA">
+                        <fecha>17/05/2023 10:45:00</fecha>
+                        <monto>6075000.00</monto>
+                        <descripcion>Transferencia a cuenta externa</descripcion>
+                        <referencia>PAGO FACTURA SERVICIOS</referencia>
+                        <destino>
+                            <banco>BANCO_INTERNACIONAL</banco>
+                            <numeroCuenta>9876543210</numeroCuenta>
+                        </destino>
+                        <clasificacion>
+                            <categoria>EGRESOS</categoria>
+                            <rango>ALTO</rango>
+                        </clasificacion>
+                    </transaccion>
+                    <transaccion id="TRX3007" tipo="CONVERSION">
+                        <fecha>20/05/2023 15:20:00</fecha>
+                        <monto>2025000.00</monto>
+                        <descripcion>Conversión de divisas</descripcion>
+                        <detalle>
+                            <monedaOrigen>USD</monedaOrigen>
+                            <monedaDestino>COP</monedaDestino>
+                            <tasa>4050.00</tasa>
+                        </detalle>
+                        <clasificacion>
+                            <categoria>INGRESOS</categoria>
+                            <rango>ALTO</rango>
+                        </clasificacion>
+                    </transaccion>
+                </transacciones>
+                
+                <resumen>
+                    <totalIngresos>2025000.00</totalIngresos>
+                    <totalEgresos>6075000.00</totalEgresos>
+                    <transacciones>
+                        <porTipo>
+                            <tipo nombre="TRANSFERENCIA" cantidad="1" monto="6075000.00"/>
+                            <tipo nombre="CONVERSION" cantidad="1" monto="2025000.00"/>
+                        </porTipo>
+                        <porRango>
+                            <rango nombre="ALTO" cantidad="2" monto="8100000.00"/>
+                        </porRango>
+                    </transacciones>
+                </resumen>
+            </cuenta>
+            
+            <cuenta id="CTA2004" moneda="COP">
+                <numero>464000567890</numero>
+                <tipo>AHORROS</tipo>
+                <saldoInicial>0.00</saldoInicial>
+                <saldoFinal>0.00</saldoFinal>
+                <estado>INACTIVA</estado>
+                <transacciones/>
+                <resumen>
+                    <totalIngresos>0.00</totalIngresos>
+                    <totalEgresos>0.00</totalEgresos>
+                </resumen>
+            </cuenta>
+        </cuentas>
+        
+        <resumenCliente>
+            <totalCuentas>3</totalCuentas>
+            <cuentasActivas>2</cuentasActivas>
+            <totalIngresos>7162500.50</totalIngresos>
+            <totalEgresos>7275000.00</totalEgresos>
+            <saldoAcumulado>46927501.00</saldoAcumulado>
+        </resumenCliente>
+    </cliente>
+    
+    <cliente id="CLI1002">
+        <identificacion>
+            <tipo>NIT</tipo>
+            <numero>987654321</numero>
+        </identificacion>
+        <nombreCompleto>Empresa XYZ S.A.</nombreCompleto>
+        <tipo>PERSONA_JURIDICA</tipo>
+        <segmento>CORPORATIVO</segmento>
+        <fechaVinculacion>2018-11-20</fechaVinculacion>
+        <estado>ACTIVO</estado>
+        
+        <cuentas>
+            <cuenta id="CTA2003" moneda="COP">
+                <numero>464000345678</numero>
+                <tipo>CORRIENTE</tipo>
+                <saldoInicial>45000000.00</saldoInicial>
+                <saldoFinal>34985000.00</saldoFinal>
+                <estado>ACTIVA</estado>
+                
+                <transacciones>
+                    <transaccion id="TRX3004" tipo="DEPOSITO">
+                        <fecha>18/05/2023 11:30:00</fecha>
+                        <monto>12000000.00</monto>
+                        <descripcion>Depósito por nómina</descripcion>
+                        <clasificacion>
+                            <categoria>INGRESOS</categoria>
+                            <rango>ALTO</rango>
+                        </clasificacion>
+                    </transaccion>
+                    <transaccion id="TRX3006" tipo="COMISION">
+                        <fecha>31/05/2023 23:59:59</fecha>
+                        <monto>15000.00</monto>
+                        <descripcion>Comisión manejo de cuenta</descripcion>
+                        <clasificacion>
+                            <categoria>EGRESOS</categoria>
+                            <rango>BAJO</rango>
+                        </clasificacion>
+                    </transaccion>
+                </transacciones>
+                
+                <resumen>
+                    <totalIngresos>12000000.00</totalIngresos>
+                    <totalEgresos>15000.00</totalEgresos>
+                    <transacciones>
+                        <porTipo>
+                            <tipo nombre="DEPOSITO" cantidad="1" monto="12000000.00"/>
+                            <tipo nombre="COMISION" cantidad="1" monto="15000.00"/>
+                        </porTipo>
+                        <porRango>
+                            <rango nombre="ALTO" cantidad="1" monto="12000000.00"/>
+                            <rango nombre="BAJO" cantidad="1" monto="15000.00"/>
+                        </porRango>
+                    </transacciones>
+                </resumen>
+            </cuenta>
+        </cuentas>
+        
+        <resumenCliente>
+            <totalCuentas>1</totalCuentas>
+            <cuentasActivas>1</cuentasActivas>
+            <totalIngresos>12000000.00</totalIngresos>
+            <totalEgresos>15000.00</totalEgresos>
+            <saldoAcumulado>34985000.00</saldoAcumulado>
+        </resumenCliente>
+    </cliente>
+    
+    <cliente id="CLI1003">
+        <identificacion>
+            <tipo>CE</tipo>
+            <numero>X1234567</numero>
+        </identificacion>
+        <nombreCompleto>Maria García López</nombreCompleto>
+        <tipo>PERSONA_NATURAL</tipo>
+        <segmento>BASICO</segmento>
+        <fechaVinculacion>2022-07-10</fechaVinculacion>
+        <fechaBaja>2023-04-15</fechaBaja>
+        <estado>INACTIVO</estado>
+        <cuentas/>
+        <resumenCliente>
+            <totalCuentas>0</totalCuentas>
+            <cuentasActivas>0</cuentasActivas>
+            <totalIngresos>0.00</totalIngresos>
+            <totalEgresos>0.00</totalEgresos>
+            <saldoAcumulado>0.00</saldoAcumulado>
+        </resumenCliente>
+    </cliente>
+    
+    <resumenGlobal>
+        <totalClientes>3</totalClientes>
+        <clientesActivos>2</clientesActivos>
+        <totalCuentas>4</totalCuentas>
+        <cuentasActivas>3</cuentasActivas>
+        <totalTransacciones>9</totalTransacciones>
+        <totalIngresos>19162500.50</totalIngresos>
+        <totalEgresos>7290000.00</totalEgresos>
+        <saldoAcumulado>81912501.00</saldoAcumulado>
+        <transaccionesPorTipo>
+            <tipo nombre="DEPOSITO" cantidad="2" monto="12500000.00"/>
+            <tipo nombre="RETIRO" cantidad="2" monto="1200000.00"/>
+            <tipo nombre="TRANSFERENCIA" cantidad="1" monto="6075000.00"/>
+            <tipo nombre="INTERESES" cantidad="1" monto="12500.50"/>
+            <tipo nombre="COMISION" cantidad="1" monto="15000.00"/>
+            <tipo nombre="CONVERSION" cantidad="1" monto="2025000.00"/>
+            <tipo nombre="AJUSTE" cantidad="1" monto="0.00"/>
+        </transaccionesPorTipo>
+        <transaccionesPorRango>
+            <rango nombre="ALTO" cantidad="4" monto="20200000.00"/>
+            <rango nombre="MEDIO" cantidad="1" monto="500000.00"/>
+            <rango nombre="BAJO" cantidad="3" monto="227500.50"/>
+            <rango nombre="MINIMO" cantidad="1" monto="0.00"/>
+        </transaccionesPorRango>
+    </resumenGlobal>
+</reporteTransaccional>"

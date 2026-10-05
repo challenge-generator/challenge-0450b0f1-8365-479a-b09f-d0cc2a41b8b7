@@ -1,0 +1,222 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:banco="http://www.banco.example.com/schemas"
+           targetNamespace="http://www.banco.example.com/schemas"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified"
+           version="1.1">
+
+    <xs:annotation>
+        <xs:documentation xml:lang="es">
+            Esquema XML para los datos de origen en transacciones bancarias.
+            Representa información de transacciones individuales con detalles de cuenta,
+            monto, fecha, tipo de transacción y datos del cliente.
+            
+            Restricciones clave:
+            - El número de cuenta debe seguir el formato IBAN (ISO 13616).
+            - Los montos deben ser positivos y con hasta 2 decimales.
+            - Las fechas deben estar en formato ISO 8601 (YYYY-MM-DD).
+            - Los IDs de transacción son UUID versión 4.
+            - La moneda debe ser un código ISO 4217 válido.
+        </xs:documentation>
+    </xs:annotation>
+
+    <xs:element name="transacciones" type="banco:TransaccionesTipo">
+        <xs:annotation>
+            <xs:documentation>Elemento raíz que contiene la lista de transacciones.</xs:documentation>
+        </xs:annotation>
+    </xs:element>
+
+    <xs:complexType name="TransaccionesTipo">
+        <xs:sequence>
+            <xs:element name="transaccion" type="banco:TransaccionTipo" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="TransaccionTipo">
+        <xs:sequence>
+            <xs:element name="idTransaccion" type="banco:UUIDTipo">
+                <xs:annotation>
+                    <xs:documentation>Identificador único de la transacción (UUID v4).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="cuentaOrigen" type="banco:IBANTipo">
+                <xs:annotation>
+                    <xs:documentation>Número de cuenta origen en formato IBAN.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="cuentaDestino" type="banco:IBANTipo">
+                <xs:annotation>
+                    <xs:documentation>Número de cuenta destino en formato IBAN.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="monto" type="banco:MontoTipo">
+                <xs:annotation>
+                    <xs:documentation>Monto de la transacción con hasta 2 decimales.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="moneda" type="banco:CodigoMonedaTipo">
+                <xs:annotation>
+                    <xs:documentation>Código de moneda ISO 4217 (ej. EUR, USD).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="fecha" type="xs:date">
+                <xs:annotation>
+                    <xs:documentation>Fecha de la transacción en formato ISO 8601 (YYYY-MM-DD).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="tipoTransaccion" type="banco:TipoTransaccionTipo">
+                <xs:annotation>
+                    <xs:documentation>Tipo de transacción (ej. TRANSFERENCIA, PAGO, DEPOSITO).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="cliente" type="banco:ClienteTipo">
+                <xs:annotation>
+                    <xs:documentation>Información del cliente asociado a la transacción.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="sucursal" type="banco:CodigoSucursalTipo" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Código de sucursal (opcional). Formato: 4 dígitos.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="concepto" type="xs:string" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Concepto de la transacción (opcional, hasta 200 caracteres).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="ClienteTipo">
+        <xs:sequence>
+            <xs:element name="idCliente" type="banco:IDClienteTipo">
+                <xs:annotation>
+                    <xs:documentation>Identificador único del cliente (formato: 10 dígitos).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="nombre" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Nombre completo del cliente (hasta 100 caracteres).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="tipoDocumento" type="banco:TipoDocumentoTipo">
+                <xs:annotation>
+                    <xs:documentation>Tipo de documento de identificación.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="numeroDocumento" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Número de documento de identificación (hasta 20 caracteres).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:simpleType name="UUIDTipo">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"/>
+            <xs:annotation>
+                <xs:documentation>Formato UUID versión 4.</xs:documentation>
+            </xs:annotation>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="IBANTipo">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}"/>
+            <xs:annotation>
+                <xs:documentation>Formato IBAN según ISO 13616.</xs:documentation>
+            </xs:annotation>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="MontoTipo">
+        <xs:restriction base="xs:decimal">
+            <xs:totalDigits value="15"/>
+            <xs:fractionDigits value="2"/>
+            <xs:minInclusive value="0.01"/>
+            <xs:annotation>
+                <xs:documentation>Monto con hasta 15 dígitos totales y 2 decimales.</xs:documentation>
+            </xs:annotation>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="CodigoMonedaTipo">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[A-Z]{3}"/>
+            <xs:annotation>
+                <xs:documentation>Código de moneda ISO 4217 (3 letras).</xs:documentation>
+            </xs:annotation>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="TipoTransaccionTipo">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="TRANSFERENCIA">
+                <xs:annotation>
+                    <xs:documentation>Transferencia entre cuentas.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PAGO">
+                <xs:annotation>
+                    <xs:documentation>Pago de servicios o productos.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="DEPOSITO">
+                <xs:annotation>
+                    <xs:documentation>Depósito en efectivo.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="RETIRO">
+                <xs:annotation>
+                    <xs:documentation>Retiro en efectivo.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="IDClienteTipo">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{10}"/>
+            <xs:annotation>
+                <xs:documentation>Identificador de cliente (10 dígitos).</xs:documentation>
+            </xs:annotation>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="TipoDocumentoTipo">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="DNI">
+                <xs:annotation>
+                    <xs:documentation>Documento Nacional de Identidad.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PASAPORTE">
+                <xs:annotation>
+                    <xs:documentation>Pasaporte.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="CEDULA">
+                <xs:annotation>
+                    <xs:documentation>Cédula de identidad.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="NIF">
+                <xs:annotation>
+                    <xs:documentation>Número de Identificación Fiscal.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="CodigoSucursalTipo">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{4}"/>
+            <xs:annotation>
+                <xs:documentation>Código de sucursal (4 dígitos).</xs:documentation>
+            </xs:annotation>
+        </xs:restriction>
+    </xs:simpleType>
+
+</xs:schema>

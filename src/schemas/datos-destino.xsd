@@ -1,0 +1,275 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:banco="http://www.banco.example.com/schemas/destino"
+           targetNamespace="http://www.banco.example.com/schemas/destino"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified"
+           version="1.1">
+
+    <xs:annotation>
+        <xs:documentation xml:lang="es">
+            Esquema XML para los datos de destino en transacciones bancarias consolidadas.
+            Representa información agrupada por cliente y tipo de transacción, con cálculos
+            agregados como montos totales, promedios y conteos.
+            
+            Restricciones clave:
+            - Los montos agregados deben mantener la precisión de 2 decimales.
+            - Las fechas de período deben ser válidas (fechaInicio &lt;= fechaFin).
+            - Los códigos de cliente y sucursal deben coincidir con los esquemas origen.
+            - Las monedas deben ser códigos ISO 4217 válidos.
+        </xs:documentation>
+    </xs:annotation>
+
+    <xs:element name="reporteTransacciones" type="banco:ReporteTransaccionesTipo">
+        <xs:annotation>
+            <xs:documentation>Elemento raíz que contiene el reporte consolidado de transacciones.</xs:documentation>
+        </xs:annotation>
+    </xs:element>
+
+    <xs:complexType name="ReporteTransaccionesTipo">
+        <xs:sequence>
+            <xs:element name="periodo" type="banco:PeriodoTipo">
+                <xs:annotation>
+                    <xs:documentation>Período de tiempo cubierto por el reporte.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="agrupacion" type="banco:AgrupacionTipo" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Agrupación de transacciones por cliente y tipo.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="PeriodoTipo">
+        <xs:sequence>
+            <xs:element name="fechaInicio" type="xs:date">
+                <xs:annotation>
+                    <xs:documentation>Fecha de inicio del período (inclusiva).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="fechaFin" type="xs:date">
+                <xs:annotation>
+                    <xs:documentation>Fecha de fin del período (inclusiva).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+        <xs:assert test="fechaInicio &lt;= fechaFin">
+            <xs:annotation>
+                <xs:documentation>La fecha de inicio debe ser menor o igual que la fecha de fin.</xs:documentation>
+            </xs:annotation>
+        </xs:assert>
+    </xs:complexType>
+
+    <xs:complexType name="AgrupacionTipo">
+        <xs:sequence>
+            <xs:element name="cliente" type="banco:ClienteResumenTipo">
+                <xs:annotation>
+                    <xs:documentation>Información resumida del cliente.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="tipoTransaccion" type="banco:TipoTransaccionDestinoTipo">
+                <xs:annotation>
+                    <xs:documentation>Tipo de transacción agrupada.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="resumen" type="banco:ResumenTransaccionesTipo">
+                <xs:annotation>
+                    <xs:documentation>Resumen de transacciones para esta agrupación.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="detalles" type="banco:DetallesTransaccionesTipo" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Detalles individuales de las transacciones (opcional).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="ClienteResumenTipo">
+        <xs:sequence>
+            <xs:element name="idCliente" type="banco:IDClienteTipo">
+                <xs:annotation>
+                    <xs:documentation>Identificador único del cliente.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="nombre" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Nombre completo del cliente.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="sucursal" type="banco:CodigoSucursalTipo" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Código de sucursal asociada (opcional).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="ResumenTransaccionesTipo">
+        <xs:sequence>
+            <xs:element name="moneda" type="banco:CodigoMonedaTipo">
+                <xs:annotation>
+                    <xs:documentation>Código de moneda ISO 4217.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="totalTransacciones" type="xs:nonNegativeInteger">
+                <xs:annotation>
+                    <xs:documentation>Número total de transacciones en esta agrupación.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="montoTotal" type="banco:MontoTipo">
+                <xs:annotation>
+                    <xs:documentation>Monto total acumulado de todas las transacciones.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="montoPromedio" type="banco:MontoTipo">
+                <xs:annotation>
+                    <xs:documentation>Monto promedio por transacción.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="montoMaximo" type="banco:MontoTipo">
+                <xs:annotation>
+                    <xs:documentation>Monto máximo registrado en una transacción.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="montoMinimo" type="banco:MontoTipo">
+                <xs:annotation>
+                    <xs:documentation>Monto mínimo registrado en una transacción.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="DetallesTransaccionesTipo">
+        <xs:sequence>
+            <xs:element name="transaccion" type="banco:TransaccionDetalleTipo" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Detalle individual de una transacción.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="TransaccionDetalleTipo">
+        <xs:sequence>
+            <xs:element name="idTransaccion" type="banco:UUIDTipo">
+                <xs:annotation>
+                    <xs:documentation>Identificador único de la transacción.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="cuentaOrigen" type="banco:IBANTipo">
+                <xs:annotation>
+                    <xs:documentation>Número de cuenta origen.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="cuentaDestino" type="banco:IBANTipo">
+                <xs:annotation>
+                    <xs:documentation>Número de cuenta destino.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="monto" type="banco:MontoTipo">
+                <xs:annotation>
+                    <xs:documentation>Monto de la transacción.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="fecha" type="xs:date">
+                <xs:annotation>
+                    <xs:documentation>Fecha de la transacción.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="concepto" type="xs:string" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Concepto de la transacción (opcional).</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:simpleType name="TipoTransaccionDestinoTipo">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="TRANSFERENCIA_INTERNA">
+                <xs:annotation>
+                    <xs:documentation>Transferencia entre cuentas del mismo banco.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="TRANSFERENCIA_EXTERNA">
+                <xs:annotation>
+                    <xs:documentation>Transferencia a otro banco.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="PAGO_SERVICIOS">
+                <xs:annotation>
+                    <xs:documentation>Pago de servicios (luz, agua, etc.).</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="DEPOSITO_EFECTIVO">
+                <xs:annotation>
+                    <xs:documentation>Depósito en efectivo.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="RETIRO_EFECTIVO">
+                <xs:annotation>
+                    <xs:documentation>Retiro en efectivo.</xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="UUIDTipo">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"/>
+            <xs:annotation>
+                <xs:documentation>Formato UUID versión 4.</xs:documentation>
+            </xs:annotation>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="IBANTipo">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}"/>
+            <xs:annotation>
+                <xs:documentation>Formato IBAN según ISO 13616.</xs:documentation>
+            </xs:annotation>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="MontoTipo">
+        <xs:restriction base="xs:decimal">
+            <xs:totalDigits value="15"/>
+            <xs:fractionDigits value="2"/>
+            <xs:minInclusive value="0.01"/>
+            <xs:annotation>
+                <xs:documentation>Monto con hasta 15 dígitos totales y 2 decimales.</xs:documentation>
+            </xs:annotation>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="CodigoMonedaTipo">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[A-Z]{3}"/>
+            <xs:annotation>
+                <xs:documentation>Código de moneda ISO 4217 (3 letras).</xs:documentation>
+            </xs:annotation>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="IDClienteTipo">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{10}"/>
+            <xs:annotation>
+                <xs:documentation>Identificador de cliente (10 dígitos).</xs:documentation>
+            </xs:annotation>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="CodigoSucursalTipo">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{4}"/>
+            <xs:annotation>
+                <xs:documentation>Código de sucursal (4 dígitos).</xs:documentation>
+            </xs:annotation>
+        </xs:restriction>
+    </xs:simpleType>
+
+</xs:schema>

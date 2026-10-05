@@ -1,0 +1,183 @@
+campo_origen,campo_destino,tipo_origen,tipo_destino,obligatoriedad_origen,obligatoriedad_destino,regla_transformacion,ejemplo_origen,ejemplo_destino,restricciones,ambigüedades
+"cuentas/cuenta/numero","cuentas/cuenta/identificador","xs:string","xs:string","required","required","Copiar directamente. Validar formato IBAN con regex `[A-Z]{2}\d{10}`.","ES91234567890123456789","ES91234567890123456789","Formato IBAN debe ser válido según ISO 13616.",""
+"cuentas/cuenta/tipo","cuentas/cuenta/tipo","xs:string","xs:string","required","required","Mapear enum: AHORRO→AHORRO, CORRIENTE→CORRIENTE, INVERSION→INVERSION.","AHORRO","AHORRO","Valores permitidos: AHORRO, CORRIENTE, INVERSION.",""
+"cuentas/cuenta/transacciones/transaccion/id","cuentas/cuenta/transacciones/transaccion/referencia","xs:string","xs:string","required","required","Copiar UUID directamente. Validar formato UUID v4.","a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8","a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8","Formato UUID debe ser válido (8-4-4-4-12 hex).","."
+"cuentas/cuenta/transacciones/transaccion/fecha","cuentas/cuenta/transacciones/transaccion/fecha","xs:dateTime","xs:date","required","required","Convertir de datetime a date (YYYY-MM-DD). Usar función XPath `fn:substring($fecha, 1, 10)`.","2023-10-15T14:30:00Z","2023-10-15","La hora se descarta. Solo se conserva la fecha.","¿Qué hacer con fechas en formato no UTC?"
+"cuentas/cuenta/transacciones/transaccion/monto","cuentas/cuenta/transacciones/transaccion/monto","xs:double","xs:double","required","required","Copiar valor numérico. Validar mínimo 0.01.","1500.50","1500.50","Monto debe ser > 0.00.",""
+"cuentas/cuenta/transacciones/transaccion/tipo","cuentas/cuenta/transacciones/transaccion/tipo","xs:string","xs:string","required","required","Mapear enum: DEPOSITO→DEPOSITO, RETIRO→RETIRO, TRANSFERENCIA→TRANSFERENCIA, COMISION→COMISION.","DEPOSITO","DEPOSITO","Valores permitidos: DEPOSITO, RETIRO, TRANSFERENCIA, COMISION.",""
+"cuentas/cuenta/transacciones/transaccion/tipo","cuentas/cuenta/transacciones/transaccion/categoria","xs:string","xs:string","required","required","Derivar categoría basada en tipo:
+- DEPOSITO → INGRESO
+- RETIRO → GASTO
+- TRANSFERENCIA → TRANSFERENCIA_INTERNA
+- COMISION → COMISION",".","INGRESO","",""
+"cuentas/cuenta/transacciones/transaccion/concepto","","xs:string","","optional","","No se mapea al esquema destino. Se descarta.","Transferencia recibida","","","¿Debe preservarse en algún campo de auditoría?"
+"","reporte/fechaGeneracion","","xs:dateTime","","required","Generar fecha actual en UTC con función XPath `fn:current-dateTime()`.","","2023-10-15T15:00:00Z","La fecha debe generarse en el momento de la transformación.",""
+"cuentas/cuenta","cuentas/cuenta/saldo","","xs:double","","required","Calcular suma de montos de transacciones. Usar XPath `sum(transacciones/transaccion[not(tipo='COMISION')]/monto)`.","","1650.75","Solo se suman transacciones que no sean COMISION.","¿Cómo manejar cuentas sin transacciones?"
+"cuentas/cuenta[tipo='INVERSION']","cuentas/cuenta/intereses","","xs:double","","optional","Calcular intereses usando función personalizada `banco:calcular-interes($saldo, $dias)`.","","12.34","Fórmula: saldo * tasa_interés * (dias/365).","."
+"cuentas/cuenta/transacciones/transaccion[tipo='COMISION']","comisiones/comision","xs:double","xs:double","optional","optional","Agrupar todas las comisiones en un nodo separado. Usar XPath `sum(//transaccion[tipo='COMISION']/monto)`.","","45.67","Solo aparece si hay transacciones tipo COMISION.",""
+
+## Reglas de Transformación Avanzadas
+
+### Agrupación y Ordenación
+1. **Agrupación por Tipo de Transacción**
+   - Usar plantilla XSLT con `<xsl:for-each-group>`:
+     ```xml
+     <xsl:for-each-group select="transacciones/transaccion" group-by="tipo">
+       <xsl:sort select="current-grouping-key()"/>
+       <xsl:apply-templates select="current-group()" mode="agrupar"/>
+     </xsl:for-each-group>
+     ```
+   - Ordenar grupos alfabéticamente por tipo.
+
+2. **Ordenación por Fecha Descendente**
+   - Dentro de cada grupo, ordenar transacciones por fecha descendente:
+     ```xml
+     <xsl:sort select="fecha" order="descending"/>
+     ```
+
+3. **Agrupación de Comisiones**
+   - Todas las transacciones con `tipo='COMISION'` deben extraerse y sumarse en un nodo `<comisiones>`:
+     ```xml
+     <comisiones>
+       <total>
+         <xsl:value-of select="sum(//transaccion[tipo='COMISION']/monto)"/>
+       </total>
+     </comisiones>
+     ```
+
+### Cálculos Personalizados
+1. **Cálculo de Intereses**
+   - Para cuentas de tipo `INVERSION`, calcular intereses usando función XPath:
+     ```xpath
+     banco:calcular-interes($saldo, $dias)
+     ```
+   - Implementación en XSLT:
+     ```xml
+     <xsl:function name="banco:calcular-interes" as="xs:double">
+       <xsl:param name="saldo" as="xs:double"/>
+       <xsl:param name="dias" as="xs:integer"/>
+       <xsl:sequence select="$saldo * 0.03 * ($dias div 365)"/>
+     </xsl:function>
+     ```
+
+2. **Cálculo de Saldo**
+   - Sumar montos de transacciones excluyendo comisiones:
+     ```xpath
+     sum(transacciones/transaccion[not(tipo='COMISION')]/monto)
+     ```
+
+### Validaciones
+1. **Validación de Formatos**
+   - IBAN: `[A-Z]{2}\d{10}`
+   - UUID: `[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}`
+   - Fecha: `YYYY-MM-DD`
+
+2. **Validación de Cardinalidad**
+   - Cada cuenta debe tener al menos una transacción.
+   - Si no hay transacciones tipo `COMISION`, el nodo `<comisiones>` no debe aparecer.
+
+## Restricciones y Ambigüedades
+
+### Restricciones del Sistema
+| Restricción                          | Descripción                                                                                     |
+|-------------------------------------|-------------------------------------------------------------------------------------------------|
+| Tamaño máximo de XML                | 10MB                                                                                           |
+| Tiempo máximo de transformación     | 30 segundos                                                                                     |
+| Versión de XSLT                     | 3.0 (con soporte para XPath 3.1)                                                               |
+| Motor de transformación             | Saxon-HE 12.4                                                                                  |
+| Esquemas XSD                       | Versión 1.1 con soporte para assertions y conditional type assignment                        |
+| Codificación de caracteres          | UTF-8                                                                                          |
+
+### Ambigüedades Identificadas
+1. **Fechas en formato no UTC**
+   - *Problema*: El esquema de origen permite fechas en cualquier zona horaria, pero el destino requiere fechas sin zona horaria.
+   - *Pregunta*: ¿Debe convertirse la fecha a UTC antes de transformarla a `xs:date`?
+   - *Decisión actual*: Se asume que todas las fechas en el origen están en UTC. Si no lo están, se registra una advertencia.
+
+2. **Cuentas sin transacciones**
+   - *Problema*: El esquema de origen no especifica si una cuenta puede estar vacía (sin transacciones).
+   - *Pregunta*: ¿Cómo calcular el saldo para una cuenta sin transacciones?
+   - *Decisión actual*: El saldo se establece en 0.00, pero esto podría ser incorrecto si la cuenta tiene un saldo inicial.
+
+3. **Preservación de metadatos**
+   - *Problema*: El campo `concepto` del origen no tiene equivalente en el destino.
+   - *Pregunta*: ¿Debe preservarse en algún campo de auditoría o extensión del esquema?
+   - *Decisión actual*: Se descarta. Se recomienda registrar en logs para trazabilidad.
+
+4. **Cálculo de intereses para cuentas no INVERSION**
+   - *Problema*: El requisito indica calcular intereses solo para cuentas de tipo `INVERSION`, pero el dominio financiero podría requerir intereses para otros tipos.
+   - *Pregunta*: ¿Debe extenderse el cálculo a otros tipos de cuenta?
+   - *Decisión actual*: Solo para `INVERSION`. Se documenta como restricción.
+
+5. **Moneda de los montos**
+   - *Problema*: El esquema de origen no especifica la moneda de los montos.
+   - *Pregunta*: ¿Todos los montos están en EUR o debe manejarse conversión?
+   - *Decisión actual*: Se asume EUR. Si aparecen montos en otra moneda, se registra error.
+
+## Ejemplo de Transformación Compleja
+
+### Entrada (XML Origen)
+```xml
+<?xml version="1.1" encoding="UTF-8"?>
+<datosOrigen xmlns="http://banco.com/schemas/datos-origen">
+  <cuentas>
+    <cuenta>
+      <numero>ES91234567890123456789</numero>
+      <tipo>INVERSION</tipo>
+      <transacciones>
+        <transaccion>
+          <id>a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8</id>
+          <fecha>2023-10-10T10:00:00Z</fecha>
+          <monto>1000.00</monto>
+          <tipo>DEPOSITO</tipo>
+          <concepto>Depósito inicial</concepto>
+        </transaccion>
+        <transaccion>
+          <id>b2c3d4e5-f6g7-8901-h2i3-j4k5l6m7n8o9</id>
+          <fecha>2023-10-12T15:30:00Z</fecha>
+          <monto>200.50</monto>
+          <tipo>COMISION</tipo>
+          <concepto>Comisión por gestión</concepto>
+        </transaccion>
+      </transacciones>
+    </cuenta>
+  </cuentas>
+</datosOrigen>
+```
+
+### Salida (XML Destino)
+```xml
+<?xml version="1.1" encoding="UTF-8"?>
+<datosDestino xmlns="http://banco.com/schemas/datos-destino">
+  <reporte>
+    <fechaGeneracion>2023-10-15T15:00:00Z</fechaGeneracion>
+    <cuentas>
+      <cuenta>
+        <identificador>ES91234567890123456789</identificador>
+        <tipo>INVERSION</tipo>
+        <saldo>1000.00</saldo>
+        <transacciones>
+          <transaccion>
+            <referencia>a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8</referencia>
+            <fecha>2023-10-10</fecha>
+            <monto>1000.00</monto>
+            <tipo>DEPOSITO</tipo>
+            <categoria>INGRESO</categoria>
+          </transaccion>
+        </transacciones>
+        <intereses>8.22</intereses>
+      </cuenta>
+    </cuentas>
+    <comisiones>
+      <total>200.50</total>
+    </comisiones>
+  </reporte>
+</datosDestino>
+```
+
+### Explicación de la Transformación
+1. **Saldo**: Se calcula como `1000.00` (solo la transacción de DEPOSITO, excluyendo COMISION).
+2. **Intereses**: Se calculan usando `banco:calcular-interes(1000.00, 5)` → `1000 * 0.03 * (5/365) = 8.22`.
+3. **Comisiones**: Se extrae la transacción tipo COMISION y se suma en `<comisiones><total>200.50</total></comisiones>`.
+4. **Fecha**: La fecha de la transacción se trunca a `2023-10-10`.
+5. **Categoría**: La transacción DEPOSITO se mapea a categoría INGRESO.
